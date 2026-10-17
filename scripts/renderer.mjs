@@ -3,6 +3,10 @@ import {
   LEVEL_BIAS, FRAME_BUDGET, HARD_TEXTURE_CAP
 } from "./constants.mjs";
 import { isSvgSource, loadSvg, clearSvgCache, createCanvas, drawRegion } from "./svg-rasterizer.mjs";
+import { isRasterSource, EdgeUpscaler } from "./raster-upscaler.mjs";
+
+/** Nombre maximum de tuiles d'image calculées par image affichée (le GPU travaille en différé). */
+const RASTER_TILES_PER_FRAME = 6;
 
 /**
  * @typedef {{u0:number, v0:number, du:number, dv:number}} Region
@@ -18,6 +22,7 @@ import { isSvgSource, loadSvg, clearSvgCache, createCanvas, drawRegion } from ".
  *
  * @typedef {object} TargetState
  * @property {string} src
+ * @property {"svg"|"raster"} kind        SVG (redessiné en vectoriel) ou image (agrandie par le GPU)
  * @property {PIXI.Texture} original      Texture de Foundry (jamais détruite par Vellum)
  * @property {{texture:PIXI.Texture, width:number, height:number}|null} base
  * @property {Patch|null} patch
@@ -47,6 +52,9 @@ export class VellumRenderer {
   #bases = new Map();
   #scratchCanvas = null;
   #blit = null;
+  #upscaler = null;
+  /** Images dont Vellum a activé les mipmaps : texture → { refs, previous }. */
+  #mipmapped = new Map();
   #timer = null;
   #firstRequest = null;
   #running = false;
@@ -132,7 +140,7 @@ export class VellumRenderer {
       return;
     }
 
-    for (const [target, src] of targets) {
+    for (const [target, { src, kind }] of targets) {
       let state = this.#states.get(target);
 
       // Foundry a remplacé la texture (tuile modifiée, nouveau fond…) : on repart de zéro.
@@ -141,11 +149,18 @@ export class VellumRenderer {
         state = null;
       }
       if (!state) {
-        state = { src, original: target.texture, base: null, patch: null, view: null, tiles: new Map(), baseTried: false, token: 0 };
+        state = { src, kind, original: target.texture, base: null, patch: null, view: null, tiles: new Map(), baseTried: false, token: 0 };
         this.#states.set(target, state);
+        if (kind === "raster") this.#enableMipmaps(state);
       }
 
       if (!target.worldVisible) continue; // tuile cachée, autre niveau affiché…
+
+      // Image : pas de fond de base, la texture de Foundry sert de base.
+      if (kind === "raster") {
+        await this.#updatePatch(target, state, { kind: "raster" });
+        continue;
+      }
 
       let source;
       try {
@@ -172,22 +187,44 @@ export class VellumRenderer {
   /* -------------------------------------------- */
 
   /**
-   * Parcourt le groupe primaire et renvoie les objets affichant un SVG.
-   * @returns {Map<PIXI.DisplayObject, string>}
+   * Parcourt le groupe primaire et renvoie les objets affichant un SVG ou une image.
+   * @returns {Map<PIXI.DisplayObject, {src:string, kind:"svg"|"raster"}>}
    */
   #collectTargets() {
     const found = new Map();
+    const rasterEnabled = this.#setting("rasterEnabled") !== false;
     const visit = obj => {
       if (!obj || obj.destroyed || obj._vellumPatch) return;
-      if (obj.texture) {
+      if (obj.texture && this.#eligible(obj)) {
         const state = this.#states.get(obj);
         const src = (state && obj.texture === state.base?.texture) ? state.src : this.#sourceOf(obj);
-        if (src && isSvgSource(src)) found.set(obj, src);
+        if (src && isSvgSource(src)) found.set(obj, { src, kind: "svg" });
+        else if (src && rasterEnabled && isRasterSource(src) && !this.#isVideo(obj)) found.set(obj, { src, kind: "raster" });
       }
       for (const child of obj.children ?? []) visit(child);
     };
     visit(canvas.primary);
     return found;
+  }
+
+  /**
+   * Objets que Vellum ne doit pas toucher :
+   * - les jetons (animations, anneaux, retournements… gérés par leur propre shader) ;
+   * - les tuiles qui s'estompent quand un jeton passe dessous (toits) : le calque
+   *   posé par Vellum ne suivrait pas cet effet.
+   */
+  #eligible(obj) {
+    const doc = obj.object?.document;
+    if (!doc) return true;
+    if (doc.documentName === "Token") return false;
+    if (doc.documentName === "Tile" && doc.occlusion?.mode) return false;
+    return true;
+  }
+
+  #isVideo(obj) {
+    const resource = obj.texture?.baseTexture?.resource;
+    return !!(PIXI.VideoResource && resource instanceof PIXI.VideoResource)
+      || resource?.source instanceof HTMLVideoElement;
   }
 
   /**
@@ -211,7 +248,9 @@ export class VellumRenderer {
       ...(base.textureCacheIds ?? []),
       ...(texture.textureCacheIds ?? [])
     ];
-    return candidates.find(c => isSvgSource(c)) ?? null;
+    return candidates.find(c => isSvgSource(c))
+      ?? candidates.find(c => isRasterSource(c))
+      ?? null;
   }
 
   /* -------------------------------------------- */
@@ -443,6 +482,7 @@ export class VellumRenderer {
     const renderer = canvas.app.renderer;
     const T = TILE_SIZE;
     let sliceStart = performance.now();
+    let sliceTiles = 0;
     try {
       while (view.queue.length) {
         if (this.#states.get(target) !== state || state.view !== view || target.destroyed || view.rt.destroyed) return;
@@ -451,9 +491,12 @@ export class VellumRenderer {
         const key = `${view.level}:${i}:${j}`;
         let tile = state.tiles.get(key);
         if (!tile || tile.rt.destroyed) {
-          tile = this.#renderTile(source, view, i, j);
+          tile = source.kind === "raster"
+            ? this.#renderRasterTile(state, view, i, j)
+            : this.#renderTile(source, view, i, j);
           state.tiles.set(key, tile);
           view.rendered++;
+          sliceTiles++;
         }
         tile.used = performance.now();
 
@@ -463,9 +506,13 @@ export class VellumRenderer {
         sprite.scale.set(1, 1);
         renderer.render(sprite, { renderTexture: view.rt, clear: false });
 
-        if (performance.now() - sliceStart > FRAME_BUDGET) {
+        // Le dessin d'une tuile d'image est presque gratuit côté processeur (le GPU
+        // travaille en différé) : on limite donc aussi le nombre de tuiles par image.
+        const gpuFull = source.kind === "raster" && sliceTiles >= RASTER_TILES_PER_FRAME;
+        if (gpuFull || performance.now() - sliceStart > FRAME_BUDGET) {
           await new Promise(resolve => requestAnimationFrame(() => resolve()));
           sliceStart = performance.now();
+          sliceTiles = 0;
         }
       }
       if (view.rendered) {
@@ -498,6 +545,60 @@ export class VellumRenderer {
     canvas.app.renderer.render(sprite, { renderTexture: rt, clear: true });
     sprite.texture.destroy(false);
     return { rt, used: performance.now() };
+  }
+
+  /** Agrandit une tuile d'image sur le GPU avec le filtre qui suit les contours. */
+  #renderRasterTile(state, view, i, j) {
+    const T = TILE_SIZE;
+    const w = Math.min(T, view.levelW - i * T);
+    const h = Math.min(T, view.levelH - j * T);
+    const native = this.#nativeSize(state);
+    const k = native.width / view.levelW;
+    const rt = PIXI.RenderTexture.create({ width: w, height: h, resolution: 1 });
+    if (PIXI.MIPMAP_MODES) rt.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
+    this.#upscaler ??= new EdgeUpscaler();
+    const sharpness = this.#setting("rasterSharpness") ?? 0.6;
+    this.#upscaler.render(canvas.app.renderer, state.original,
+      { x: i * T * k, y: j * T * k, w: w * k, h: h * k }, rt, sharpness);
+    return { rt, used: performance.now() };
+  }
+
+  /* -------------------------------------------- */
+  /*  Anti-scintillement des images (mipmaps)     */
+  /* -------------------------------------------- */
+
+  /**
+   * Active les mipmaps sur la texture d'une image : en vue dézoomée, la carte
+   * graphique utilise alors des versions réduites et filtrées au lieu de sauter
+   * des pixels, ce qui supprime le scintillement des traits fins.
+   */
+  #enableMipmaps(state) {
+    if (!this.#setting("rasterMipmaps") || !PIXI.MIPMAP_MODES) return;
+    const base = state.original?.baseTexture;
+    if (!base || base.destroyed) return;
+    let entry = this.#mipmapped.get(base);
+    if (!entry) {
+      if (base.mipmap === PIXI.MIPMAP_MODES.ON) return; // déjà fait par Foundry
+      entry = { refs: 0, previous: base.mipmap };
+      base.mipmap = PIXI.MIPMAP_MODES.ON;
+      base.update();
+      this.#mipmapped.set(base, entry);
+      this.#log("Mipmaps activées", state.src);
+    }
+    entry.refs++;
+    state.mipmapBase = base;
+  }
+
+  #restoreMipmaps(state) {
+    const base = state.mipmapBase;
+    state.mipmapBase = null;
+    const entry = base && this.#mipmapped.get(base);
+    if (!entry || --entry.refs > 0) return;
+    this.#mipmapped.delete(base);
+    if (!base.destroyed) {
+      base.mipmap = entry.previous;
+      base.update();
+    }
   }
 
   /** Libère les tuiles les moins récemment utilisées au-delà du budget mémoire. */
@@ -719,6 +820,14 @@ export class VellumRenderer {
     }
     state.base = null;
     this.#releaseBase(state);
+    if (restore) this.#restoreMipmaps(state);
+    else {
+      // Scène démontée : on oublie simplement le suivi, la texture appartient à Foundry.
+      const base = state.mipmapBase;
+      const entry = base && this.#mipmapped.get(base);
+      if (entry && --entry.refs <= 0) this.#mipmapped.delete(base);
+      state.mipmapBase = null;
+    }
     this.#states.delete(target);
   }
 
