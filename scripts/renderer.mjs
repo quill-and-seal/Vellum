@@ -4,6 +4,7 @@ import {
 } from "./constants.mjs";
 import { isSvgSource, loadSvg, clearSvgCache, createCanvas, drawRegion } from "./svg-rasterizer.mjs";
 import { isRasterSource, EdgeUpscaler } from "./raster-upscaler.mjs";
+import { measureBlockiness, isBlocky, deblockTexture } from "./raster-deblock.mjs";
 
 /** Nombre maximum de tuiles d'image calculées par image affichée (le GPU travaille en différé). */
 const RASTER_TILES_PER_FRAME = 6;
@@ -151,7 +152,7 @@ export class VellumRenderer {
       if (!state) {
         state = { src, kind, original: target.texture, base: null, patch: null, view: null, tiles: new Map(), baseTried: false, token: 0 };
         this.#states.set(target, state);
-        if (kind === "raster") this.#enableMipmaps(state);
+        if (kind === "raster" && !this.#deblock(target, state)) this.#enableMipmaps(state);
       }
 
       if (!target.worldVisible) continue; // tuile cachée, autre niveau affiché…
@@ -559,9 +560,40 @@ export class VellumRenderer {
     this.#upscaler ??= new EdgeUpscaler();
     const sharpness = this.#setting("rasterSharpness") ?? 1;
     const denoise = this.#setting("rasterDenoise") ?? 0.6;
-    this.#upscaler.render(canvas.app.renderer, state.original,
+    this.#upscaler.render(canvas.app.renderer, state.base?.texture ?? state.original,
       { x: i * T * k, y: j * T * k, w: w * k, h: h * k }, rt, sharpness, denoise);
     return { rt, used: performance.now() };
+  }
+
+  /* -------------------------------------------- */
+  /*  Dé-blocage des images JPG                   */
+  /* -------------------------------------------- */
+
+  /**
+   * Si l'image montre une grille de compression JPG, la remplace par une copie
+   * dé-bloquée (avec mipmaps). Renvoie true si la copie a été créée.
+   */
+  #deblock(target, state) {
+    const strength = this.#setting("rasterDeblock") ?? 1;
+    const element = state.original.baseTexture?.resource?.source;
+    if (!(strength > 0) || !element) return false;
+    try {
+      const { width, height } = state.original.baseTexture;
+      const t0 = performance.now();
+      const ratio = measureBlockiness(element, width, height);
+      if (!isBlocky(ratio)) {
+        this.#log(`Pas de blocs de compression détectés (indice ${ratio.toFixed(2)})`, state.src);
+        return false;
+      }
+      const texture = deblockTexture(canvas.app.renderer, state.original, strength);
+      this.#swapTexture(target, texture);
+      state.base = { texture, width: texture.width, height: texture.height, owned: true };
+      this.#log(`Dé-blocage appliqué (indice ${ratio.toFixed(2)}) en ${Math.round(performance.now() - t0)} ms`, state.src);
+      return true;
+    } catch (error) {
+      this.#log("Dé-blocage impossible, image laissée telle quelle", error);
+      return false;
+    }
   }
 
   /* -------------------------------------------- */
@@ -819,6 +851,7 @@ export class VellumRenderer {
     if (state.base && restore && !target.destroyed && target.texture === state.base.texture && !state.original.destroyed) {
       this.#swapTexture(target, state.original);
     }
+    if (state.base?.owned) this.#destroyTexture(state.base.texture); // copie dé-bloquée
     state.base = null;
     this.#releaseBase(state);
     if (restore) this.#restoreMipmaps(state);

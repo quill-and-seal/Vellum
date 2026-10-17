@@ -35,6 +35,10 @@
         "Name": "Grain reduction",
         "Hint": "Smooths small color variations (grain, JPG/WebP compression artifacts) instead of sharpening them. 0 = maximum sharpness, 1 = no added grain, close to Foundry's look on flat areas. Real edges stay sharp."
       },
+      "RasterDeblock": {
+        "Name": "Deblocking (JPG)",
+        "Hint": "Removes the squares caused by JPG compression: at 8-pixel block borders, small color steps between flat areas become a smooth gradient. Only applies to images where a compression grid is detected; real edges are untouched. 0 = off."
+      },
       "Debug": {
         "Name": "Debug mode",
         "Hint": "Logs details of every render to the console (F12)."

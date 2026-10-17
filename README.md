@@ -40,6 +40,8 @@ Une image en pixels n'a pas de détail au-delà de sa résolution : aucun module
 - **au zoom**, au-delà de la résolution de l'image, remplace l'agrandissement flou de Foundry par un filtre qui suit les contours (même principe qu'AMD FSR 1) : les traits restent plus nets et moins en escalier, les aplats restent doux, sans halo autour des contours. Le calcul se fait sur la carte graphique, par tuiles gardées en cache ;
 - **au dézoom**, active des versions réduites de l'image (mipmaps) pour supprimer le scintillement des traits fins.
 
+Les JPG compressés montrent des carrés (blocs de 8×8 pixels compressés séparément). Vellum détecte automatiquement cette grille et, si elle est présente, calcule une seule fois une copie de l'image où les petites marches de couleur aux frontières des blocs deviennent des dégradés ; les vrais contours ne sont pas touchés. Les images propres (PNG, JPG de bonne qualité) ne sont pas modifiées. Le WebP compressé utilise une grille différente et n'est pas traité.
+
 Sur les images compressées (JPG, WebP de qualité moyenne), un filtre qui renforce les contours renforce aussi le grain de compression : le réglage **Réduction du grain** lisse ces petites variations dans les zones unies, au prix d'un peu de netteté.
 
 Le gain est surtout visible sur les contours. Une carte exportée en basse résolution reste floue de près : pour un rendu parfaitement net, exportez-la en SVG ou en plus haute résolution.
@@ -82,6 +84,7 @@ Dans **Paramètres → Configurer les paramètres → Vellum**. Ce sont des rég
 | Budget mémoire de la zone visible | 32 Mpx | Mémoire vidéo réservée aux tuiles en cache et à la zone affichée (32 Mpx ≈ 128 Mo). Plus haut, plus de tuiles restent en mémoire et les allers-retours sont instantanés. À baisser sur les petites configurations. |
 | Lissage des images | Oui | Agrandissement qui suit les contours et anti-scintillement pour les fonds et tuiles en image. |
 | Netteté du lissage | 1 | 0 = rendu doux, 1 = contours les plus nets. Jamais de halo, quel que soit le réglage. |
+| Dé-blocage (JPG) | 1 | Efface les carrés de compression des JPG (blocs de 8 px). Ne s'applique qu'aux images où une grille de compression est détectée. 0 = désactivé. |
 | Réduction du grain | 0,6 | Lisse le grain et les artefacts de compression (JPG, WebP) au lieu de les accentuer. 0 = netteté maximale, 1 = aucun grain ajouté. Les vrais contours restent nets. |
 | Mode débogage | Non | Affiche le détail et la durée de chaque rendu dans la console. |
 
@@ -160,6 +163,7 @@ scripts/
   svg-rasterizer.mjs     Chargement, décodage et dessin par morceaux
   svg-optimizer.mjs      Pré-rendu des calques floutés
   raster-upscaler.mjs    Filtre d'agrandissement des images (shader GPU)
+  raster-deblock.mjs     Détection de la grille JPG et dé-blocage (shader GPU)
   constants.mjs          Seuils et paramètres internes
 lang/                    Traductions (français, anglais)
 .github/workflows/       Publication automatique des releases

@@ -102,6 +102,20 @@ function registerSettings() {
     }
   });
 
+  game.settings.register(MODULE_ID, "rasterDeblock", {
+    name: "VELLUM.Settings.RasterDeblock.Name",
+    hint: "VELLUM.Settings.RasterDeblock.Hint",
+    scope: "client",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 1, step: 0.1 },
+    default: 1,
+    onChange: () => {
+      renderer.reset();
+      renderer.schedule(0);
+    }
+  });
+
   game.settings.register(MODULE_ID, "debug", {
     name: "VELLUM.Settings.Debug.Name",
     hint: "VELLUM.Settings.Debug.Hint",

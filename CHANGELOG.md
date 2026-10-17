@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+### Nouveautés
+- **Dé-blocage des JPG** : les carrés dus à la compression JPG (blocs de 8×8 pixels) sont effacés. Vellum détecte automatiquement la grille de compression ; si elle est présente, il calcule une seule fois sur le GPU une copie de l'image où les petites marches de couleur entre zones unies deviennent des dégradés. Les vrais contours ne sont pas touchés, et les images propres ne sont pas modifiées.
+- Nouveau réglage **Dé-blocage (JPG)** (1 par défaut, 0 pour désactiver).
+
 ## 0.3.1
 
 ### Corrections
