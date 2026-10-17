@@ -31,6 +31,7 @@ uniform sampler2D uSampler;
 uniform vec2 uTexSize;        // taille réelle de la texture, en pixels
 uniform vec4 uClamp;          // centres des pixels extrêmes autorisés (bords de l'image)
 uniform float uSharpness;     // 0 = doux, 1 = net (réglage FSR d'origine)
+uniform float uDenoise;       // 0 = aucun, 1 = lissage fort des faibles variations (grain, compression)
 
 vec4 tap(vec2 p) {
   return texture2D(uSampler, clamp(p, uClamp.xy, uClamp.zw) / uTexSize);
@@ -139,7 +140,19 @@ void main() {
   // Anti-halo : le résultat reste entre le min et le max des 4 pixels voisins.
   vec4 lo4 = min(min(tf, tg), min(tj, tk));
   vec4 hi4 = max(max(tf, tg), max(tj, tk));
-  gl_FragColor = clamp(acc / accW, lo4, hi4);
+  vec4 color = clamp(acc / accW, lo4, hi4);
+
+  // Réduction du grain : là où les 4 pixels voisins varient peu (bruit de compression,
+  // grain), FSR prendrait ces variations pour des détails et les renforcerait. On y
+  // revient à une interpolation simple, qui lisse au lieu d'accentuer.
+  if (uDenoise > 0.0) {
+    float contrast = max(max(lf, lg), max(lj, lk)) - min(min(lf, lg), min(lj, lk));
+    float t = uDenoise;  // seuil de contraste (luminance de 0 à 2)
+    float keep = smoothstep(0.25 * t, t, contrast);
+    vec4 smooth4 = mix(mix(tf, tg, f.x), mix(tj, tk, f.x), f.y);
+    color = mix(smooth4, color, keep);
+  }
+  gl_FragColor = color;
 }`;
 
 /** Extensions d'images prises en charge (les vidéos sont exclues). */
@@ -174,7 +187,8 @@ export class EdgeUpscaler {
       uSampler: PIXI.Texture.EMPTY,
       uTexSize: new Float32Array([1, 1]),
       uClamp: new Float32Array([0, 0, 1, 1]),
-      uSharpness: 1
+      uSharpness: 1,
+      uDenoise: 0
     });
     this.#mesh = new PIXI.Mesh(this.#geometry, this.#shader);
     this.#mesh.state.blend = false; // on écrit les valeurs telles quelles (alpha prémultiplié)
@@ -187,8 +201,9 @@ export class EdgeUpscaler {
    * @param {{x:number, y:number, w:number, h:number}} rect  Zone source, en pixels de l'image
    * @param {PIXI.RenderTexture} target  Destination (taille = taille de sortie)
    * @param {number} sharpness           0 (doux) à 1 (net)
+   * @param {number} denoise             0 (aucun) à 1 (fort)
    */
-  render(renderer, source, rect, target, sharpness) {
+  render(renderer, source, rect, target, sharpness, denoise = 0) {
     this.#ensure();
     const base = source.baseTexture;
     const res = base.resolution || 1;
@@ -215,6 +230,7 @@ export class EdgeUpscaler {
     u.uClamp[2] = fx + fw - 0.5;
     u.uClamp[3] = fy + fh - 0.5;
     u.uSharpness = sharpness;
+    u.uDenoise = denoise;
 
     renderer.render(this.#mesh, { renderTexture: target, clear: true });
   }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+### Corrections
+- **Grain sur les images compressées** : le filtre d'agrandissement accentuait le bruit de compression (JPG, WebP) dans les zones unies et autour des traits. Dans les zones à faible contraste, il revient désormais à une interpolation simple, qui lisse au lieu d'accentuer.
+- Nouveau réglage **Réduction du grain** (0,6 par défaut) pour doser ce compromis entre netteté et grain.
+
 ## 0.3.0
 
 ### Nouveautés

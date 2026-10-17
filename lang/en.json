@@ -31,6 +31,10 @@
         "Name": "Smoothing sharpness",
         "Hint": "0 = soft, 1 = sharpest edges. The result never exceeds the colors of neighboring pixels: no halos at any setting."
       },
+      "RasterDenoise": {
+        "Name": "Grain reduction",
+        "Hint": "Smooths small color variations (grain, JPG/WebP compression artifacts) instead of sharpening them. 0 = maximum sharpness, 1 = no added grain, close to Foundry's look on flat areas. Real edges stay sharp."
+      },
       "Debug": {
         "Name": "Debug mode",
         "Hint": "Logs details of every render to the console (F12)."

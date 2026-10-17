@@ -88,6 +88,20 @@ function registerSettings() {
     }
   });
 
+  game.settings.register(MODULE_ID, "rasterDenoise", {
+    name: "VELLUM.Settings.RasterDenoise.Name",
+    hint: "VELLUM.Settings.RasterDenoise.Hint",
+    scope: "client",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 1, step: 0.1 },
+    default: 0.6,
+    onChange: () => {
+      renderer.reset();
+      renderer.schedule(0);
+    }
+  });
+
   game.settings.register(MODULE_ID, "debug", {
     name: "VELLUM.Settings.Debug.Name",
     hint: "VELLUM.Settings.Debug.Hint",

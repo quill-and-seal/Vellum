@@ -40,6 +40,8 @@ Une image en pixels n'a pas de détail au-delà de sa résolution : aucun module
 - **au zoom**, au-delà de la résolution de l'image, remplace l'agrandissement flou de Foundry par un filtre qui suit les contours (même principe qu'AMD FSR 1) : les traits restent plus nets et moins en escalier, les aplats restent doux, sans halo autour des contours. Le calcul se fait sur la carte graphique, par tuiles gardées en cache ;
 - **au dézoom**, active des versions réduites de l'image (mipmaps) pour supprimer le scintillement des traits fins.
 
+Sur les images compressées (JPG, WebP de qualité moyenne), un filtre qui renforce les contours renforce aussi le grain de compression : le réglage **Réduction du grain** lisse ces petites variations dans les zones unies, au prix d'un peu de netteté.
+
 Le gain est surtout visible sur les contours. Une carte exportée en basse résolution reste floue de près : pour un rendu parfaitement net, exportez-la en SVG ou en plus haute résolution.
 
 Les jetons et les tuiles qui s'estompent au passage d'un jeton (toits) ne sont pas modifiés. Les vidéos non plus.
@@ -80,6 +82,7 @@ Dans **Paramètres → Configurer les paramètres → Vellum**. Ce sont des rég
 | Budget mémoire de la zone visible | 32 Mpx | Mémoire vidéo réservée aux tuiles en cache et à la zone affichée (32 Mpx ≈ 128 Mo). Plus haut, plus de tuiles restent en mémoire et les allers-retours sont instantanés. À baisser sur les petites configurations. |
 | Lissage des images | Oui | Agrandissement qui suit les contours et anti-scintillement pour les fonds et tuiles en image. |
 | Netteté du lissage | 1 | 0 = rendu doux, 1 = contours les plus nets. Jamais de halo, quel que soit le réglage. |
+| Réduction du grain | 0,6 | Lisse le grain et les artefacts de compression (JPG, WebP) au lieu de les accentuer. 0 = netteté maximale, 1 = aucun grain ajouté. Les vrais contours restent nets. |
 | Mode débogage | Non | Affiche le détail et la durée de chaque rendu dans la console. |
 
 ## Préparer ses SVG

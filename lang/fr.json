@@ -31,6 +31,10 @@
         "Name": "Netteté du lissage",
         "Hint": "0 = rendu doux, 1 = contours les plus nets possible. Le résultat ne dépasse jamais les couleurs des pixels voisins : pas de halo, quel que soit le réglage."
       },
+      "RasterDenoise": {
+        "Name": "Réduction du grain",
+        "Hint": "Lisse les petites variations de couleur (grain, artefacts de compression JPG/WebP) au lieu de les accentuer. 0 = netteté maximale, 1 = aucun grain ajouté, rendu proche de celui de Foundry sur les zones unies. Les vrais contours restent nets."
+      },
       "Debug": {
         "Name": "Mode débogage",
         "Hint": "Affiche dans la console (F12) le détail de chaque rendu."
