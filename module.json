@@ -1,8 +1,8 @@
 {
   "id": "vellum",
   "title": "Vellum",
-  "description": "Fonds de scène et tuiles en SVG, nets à tous les niveaux de zoom. Vellum re-rasterise les images vectorielles à la résolution de l'écran au lieu de les figer à leur taille native.",
-  "version": "0.2.1",
+  "description": "Fonds de scène et tuiles en SVG, nets à tous les niveaux de zoom, et images (PNG, WebP…) agrandies proprement, sans scintillement au dézoom.",
+  "version": "0.3.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -28,11 +28,11 @@
       "path": "lang/en.json"
     }
   ],
-  "url": "https://github.com/argannao/Vellum",
-  "manifest": "https://github.com/argannao/Vellum/releases/latest/download/module.json",
-  "download": "https://github.com/argannao/Vellum/releases/download/v0.2.1/module.zip",
-  "bugs": "https://github.com/argannao/Vellum/issues",
-  "readme": "https://github.com/argannao/Vellum/blob/main/README.md",
-  "changelog": "https://github.com/argannao/Vellum/blob/main/CHANGELOG.md",
+  "url": "https://github.com/quill-and-seal/Vellum",
+  "manifest": "https://github.com/quill-and-seal/Vellum/releases/latest/download/module.json",
+  "download": "https://github.com/quill-and-seal/Vellum/releases/download/v0.3.0/module.zip",
+  "bugs": "https://github.com/quill-and-seal/Vellum/issues",
+  "readme": "https://github.com/quill-and-seal/Vellum/blob/main/README.md",
+  "changelog": "https://github.com/quill-and-seal/Vellum/blob/main/CHANGELOG.md",
   "license": "LICENSE"
 }

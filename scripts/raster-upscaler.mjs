@@ -109,8 +109,8 @@ void main() {
   edge(dir, len, f.x * f.y,                 lg, lj, lk, ll, lo);
 
   float dirR = dot(dir, dir);
-  bool flat = dirR < 1.0 / 32768.0;
-  dir = flat ? vec2(1.0, 0.0) : dir * inversesqrt(dirR);
+  bool noEdge = dirR < 1.0 / 32768.0;
+  dir = noEdge ? vec2(1.0, 0.0) : dir * inversesqrt(dirR);
 
   len *= 0.5;
   len *= len;

@@ -1,10 +1,10 @@
 # Vellum
 
-**Des fonds de scène et des tuiles en SVG, nets à tous les niveaux de zoom, dans Foundry VTT.**
+**Des fonds de scène et des tuiles en SVG, nets à tous les niveaux de zoom, dans Foundry VTT. Et des images (PNG, WebP…) agrandies proprement.**
 
 Le vélin était la surface lisse et sans grain des manuscrits enluminés. Vellum apporte la même chose à vos cartes : plus de pixels qui apparaissent quand vous zoomez sur un détail.
 
-> ⚠️ **Module en développement.** Testé sur Foundry VTT v14. Retours et rapports de bugs bienvenus dans les [issues](https://github.com/argannao/Vellum/issues).
+> ⚠️ **Module en développement.** Testé sur Foundry VTT v14. Retours et rapports de bugs bienvenus dans les [issues](https://github.com/quill-and-seal/Vellum/issues).
 
 ---
 
@@ -33,6 +33,17 @@ Fonds de scène et tuiles sont gérés de la même façon, sans configuration : 
 
 Les filtres de flou (ombrages de relief, halos…) sont l'opération la plus coûteuse pour le navigateur : sur une carte de test, ils représentaient les trois quarts du temps de rendu. Comme un contenu flou n'a, par nature, aucun détail fin, Vellum pré-calcule chaque calque flouté une seule fois sous forme d'image, à sa place exacte dans la carte (ordre d'affichage, transformations et modes de fusion conservés). Visuellement, rien ne change.
 
+## Images (PNG, JPG, WebP, AVIF)
+
+Une image en pixels n'a pas de détail au-delà de sa résolution : aucun module ne la rendra aussi nette qu'un SVG. Mais la façon de l'agrandir change beaucoup le résultat. Pour les fonds et tuiles en image, Vellum :
+
+- **au zoom**, au-delà de la résolution de l'image, remplace l'agrandissement flou de Foundry par un filtre qui suit les contours (même principe qu'AMD FSR 1) : les traits restent plus nets et moins en escalier, les aplats restent doux, sans halo autour des contours. Le calcul se fait sur la carte graphique, par tuiles gardées en cache ;
+- **au dézoom**, active des versions réduites de l'image (mipmaps) pour supprimer le scintillement des traits fins.
+
+Le gain est surtout visible sur les contours. Une carte exportée en basse résolution reste floue de près : pour un rendu parfaitement net, exportez-la en SVG ou en plus haute résolution.
+
+Les jetons et les tuiles qui s'estompent au passage d'un jeton (toits) ne sont pas modifiés. Les vidéos non plus.
+
 ## Installation
 
 ### Par URL de manifeste (recommandé)
@@ -40,12 +51,12 @@ Les filtres de flou (ombrages de relief, halos…) sont l'opération la plus co�
 Dans Foundry : **Modules complémentaires → Installer un module**, puis collez dans le champ « URL du manifeste » :
 
 ```
-https://github.com/argannao/Vellum/releases/latest/download/module.json
+https://github.com/quill-and-seal/Vellum/releases/latest/download/module.json
 ```
 
 ### Manuellement
 
-1. Téléchargez `module.zip` depuis la [dernière release](https://github.com/argannao/Vellum/releases/latest).
+1. Téléchargez `module.zip` depuis la [dernière release](https://github.com/quill-and-seal/Vellum/releases/latest).
 2. Décompressez-le dans `Data/modules/vellum/` de votre installation Foundry.
 3. Redémarrez Foundry et activez **Vellum** dans votre monde.
 
@@ -67,6 +78,8 @@ Dans **Paramètres → Configurer les paramètres → Vellum**. Ce sont des rég
 | Qualité | Écran (×1) | Résolution de la zone visible par rapport à l'écran. ×1,5 ou ×2 pour un rendu encore plus fin, au prix de plus de mémoire et de temps de calcul. |
 | Résolution du fond de base | 4096 px | Taille de la carte entière rendue au chargement. Plus haut = vue d'ensemble plus nette, mais chargement plus long. |
 | Budget mémoire de la zone visible | 32 Mpx | Mémoire vidéo réservée aux tuiles en cache et à la zone affichée (32 Mpx ≈ 128 Mo). Plus haut, plus de tuiles restent en mémoire et les allers-retours sont instantanés. À baisser sur les petites configurations. |
+| Lissage des images | Oui | Agrandissement qui suit les contours et anti-scintillement pour les fonds et tuiles en image. |
+| Netteté du lissage | 1 | 0 = rendu doux, 1 = contours les plus nets. Jamais de halo, quel que soit le réglage. |
 | Mode débogage | Non | Affiche le détail et la durée de chaque rendu dans la console. |
 
 ## Préparer ses SVG
@@ -84,6 +97,7 @@ Pour un résultat optimal :
 - **SVG très complexes.** Le temps de dessin d'une tuile dépend surtout du contenu du fichier : de l'ordre de 10 à 30 ms par tuile pour une carte de 16 Mo et 61 000 formes.
 - **Navigateur.** Vellum est optimisé pour Chromium (l'application Foundry, Chrome, Edge). Sous Firefox, le rendu fonctionne mais peut être plus lent.
 - **Fichiers hébergés ailleurs** (S3, autre domaine) : le serveur doit autoriser les requêtes CORS, sinon le SVG reste en résolution native.
+- **Toits et jetons** : les tuiles qui s'estompent au passage d'un jeton et les jetons ne sont pas traités, le calque posé par Vellum ne suivrait pas leurs effets.
 
 ## Diagnostic
 
@@ -114,19 +128,22 @@ Activez le **mode débogage** dans les réglages pour voir la durée de chaque �
 - [x] **0.1** — Rendu adaptatif au zoom des fonds de scène et tuiles SVG.
 - [x] **0.2** — Rendu en deux couches (fond de base + zone visible), optimisation automatique des flous, fond de base partagé entre objets identiques.
 - [x] **0.2.1** — Zone visible rendue par tuiles avec cache GPU, pour supprimer les saccades.
-- [ ] **0.3** — Mémorisation des cartes préparées d'une session à l'autre, pour un chargement instantané.
+- [x] **0.3** — Lissage des images (PNG, JPG, WebP, AVIF) : agrandissement qui suit les contours et anti-scintillement.
+- [ ] Mémorisation des cartes SVG préparées d'une session à l'autre, pour un chargement instantané.
 - [ ] Pistes : réglages par scène, aperçu dans la configuration de la scène, prise en charge d'autres formats vectoriels.
 
 ## Fonctionnement technique
 
 Le canvas de Foundry tourne en WebGL (via PIXI), qui ne sait afficher que des textures en pixels. Vellum :
 
-1. parcourt le groupe primaire du canvas et repère les objets dont la texture provient d'un fichier SVG ;
+1. parcourt le groupe primaire du canvas et repère les objets dont la texture provient d'un fichier SVG ou d'une image ;
 2. charge le SVG une seule fois, le normalise (taille et `viewBox`), pré-rend ses calques floutés, puis le décode en image. Chromium garde sa version vectorielle : dessiner une portion agrandie retrace les formes à la taille demandée ;
 3. rend la carte entière en fond de base et remplace la texture de Foundry par ce rendu, sans changer sa taille dans la scène ;
 4. à chaque arrêt de zoom ou de déplacement, choisit le niveau de zoom (l'image entière fait la largeur du fond de base × 2, × 4, × 8…) et la liste des tuiles de 512 px qui couvrent l'écran, plus une tuile de marge ;
 5. assemble sur le GPU, dans une seule texture, l'ancienne vue (en aperçu) puis les tuiles déjà en cache, et dessine les tuiles manquantes une par une, du centre vers les bords. Chaque tuile est gardée sur le GPU ; les moins récemment utilisées sont libérées au-delà du budget mémoire ;
 6. pose cette texture par-dessus le fond, dans un objet du même type que la cible, inséré juste au-dessus d'elle : il est trié, éclairé et masqué comme elle. Sa position est resynchronisée à chaque image.
+
+Pour les images, il n'y a pas de fond de base : la texture de Foundry en tient lieu, avec ses mipmaps activées. Les tuiles ne sont pas dessinées par le navigateur mais calculées sur le GPU par un shader : 12 pixels voisins, direction du contour estimée localement, noyau de type Lanczos étiré le long du contour, résultat borné par les 4 pixels voisins.
 
 Les canvas de rendu sont gardés en mémoire CPU, ce qui évite les artefacts que certaines cartes graphiques produisent lors de la copie de très grands canvas vers WebGL. La texture d'origine de Foundry n'est jamais modifiée : désactiver Vellum la rétablit immédiatement.
 
@@ -139,6 +156,7 @@ scripts/
   renderer.mjs           Détection des SVG, fond de base, tuiles et zone visible
   svg-rasterizer.mjs     Chargement, décodage et dessin par morceaux
   svg-optimizer.mjs      Pré-rendu des calques floutés
+  raster-upscaler.mjs    Filtre d'agrandissement des images (shader GPU)
   constants.mjs          Seuils et paramètres internes
 lang/                    Traductions (français, anglais)
 .github/workflows/       Publication automatique des releases

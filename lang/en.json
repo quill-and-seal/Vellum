@@ -23,9 +23,17 @@
         "Name": "Visible area memory budget (megapixels)",
         "Hint": "Maximum size of the high-resolution render of the displayed area. 32 MP ≈ 128 MB of video memory, enough for a 4K screen at \"Fine\" quality. Lower this on modest hardware."
       },
+      "RasterEnabled": {
+        "Name": "Image smoothing",
+        "Hint": "For PNG, JPG, WebP or AVIF backgrounds and tiles: upscaling that keeps edges sharp and smooth when zooming past the image's resolution, and no shimmering when zoomed out."
+      },
+      "RasterSharpness": {
+        "Name": "Smoothing sharpness",
+        "Hint": "0 = soft, 1 = sharpest edges. The result never exceeds the colors of neighboring pixels: no halos at any setting."
+      },
       "Debug": {
         "Name": "Debug mode",
-        "Hint": "Logs details of every SVG render to the console (F12)."
+        "Hint": "Logs details of every render to the console (F12)."
       }
     },
     "Notifications": {

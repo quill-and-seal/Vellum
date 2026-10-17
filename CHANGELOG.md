@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+### Nouveautés
+- **Lissage des images** (PNG, JPG, WebP, AVIF) pour les fonds de scène et les tuiles :
+  - au zoom, au-delà de la résolution de l'image, agrandissement par un filtre GPU qui suit les contours (principe d'AMD FSR 1), sans halo, calculé par tuiles gardées en cache ;
+  - au dézoom, mipmaps activées pour supprimer le scintillement des traits fins.
+- Nouveaux réglages : **Lissage des images** et **Netteté du lissage**.
+- `inspect()` indique le type de chaque objet suivi (SVG ou image).
+
+### Changements
+- Les jetons et les tuiles qui s'estompent au passage d'un jeton (toits) ne sont plus traités, SVG compris : le calque de Vellum ne suivait pas leurs effets.
+- Le dépôt a déménagé dans l'organisation GitHub quill-and-seal : liens du manifeste mis à jour.
+
 ## 0.2.1
 
 ### Améliorations

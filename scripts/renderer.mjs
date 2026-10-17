@@ -557,7 +557,7 @@ export class VellumRenderer {
     const rt = PIXI.RenderTexture.create({ width: w, height: h, resolution: 1 });
     if (PIXI.MIPMAP_MODES) rt.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
     this.#upscaler ??= new EdgeUpscaler();
-    const sharpness = this.#setting("rasterSharpness") ?? 0.6;
+    const sharpness = this.#setting("rasterSharpness") ?? 1;
     this.#upscaler.render(canvas.app.renderer, state.original,
       { x: i * T * k, y: j * T * k, w: w * k, h: h * k }, rt, sharpness);
     return { rt, used: performance.now() };
@@ -573,7 +573,7 @@ export class VellumRenderer {
    * des pixels, ce qui supprime le scintillement des traits fins.
    */
   #enableMipmaps(state) {
-    if (!this.#setting("rasterMipmaps") || !PIXI.MIPMAP_MODES) return;
+    if (!PIXI.MIPMAP_MODES) return;
     const base = state.original?.baseTexture;
     if (!base || base.destroyed) return;
     let entry = this.#mipmapped.get(base);
@@ -853,6 +853,7 @@ export class VellumRenderer {
       const native = this.#nativeSize(s);
       const p = s.patch;
       return {
+        type: s.kind === "raster" ? "image" : "SVG",
         src: s.src,
         objet: target.constructor?.name,
         natif: `${native.width}×${native.height}`,

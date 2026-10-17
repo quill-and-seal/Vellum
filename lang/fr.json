@@ -23,9 +23,17 @@
         "Name": "Budget mémoire de la zone visible (mégapixels)",
         "Hint": "Taille maximale du rendu haute résolution de la zone affichée. 32 Mpx ≈ 128 Mo de mémoire vidéo, suffisant pour un écran 4K en qualité « Fine ». Baissez cette valeur sur les petites configurations."
       },
+      "RasterEnabled": {
+        "Name": "Lissage des images",
+        "Hint": "Pour les fonds et tuiles en PNG, JPG, WebP ou AVIF : agrandissement qui garde les contours nets et lisses quand on zoome au-delà de la résolution de l'image, et suppression du scintillement en vue dézoomée."
+      },
+      "RasterSharpness": {
+        "Name": "Netteté du lissage",
+        "Hint": "0 = rendu doux, 1 = contours les plus nets possible. Le résultat ne dépasse jamais les couleurs des pixels voisins : pas de halo, quel que soit le réglage."
+      },
       "Debug": {
         "Name": "Mode débogage",
-        "Hint": "Affiche dans la console (F12) le détail de chaque rendu SVG."
+        "Hint": "Affiche dans la console (F12) le détail de chaque rendu."
       }
     },
     "Notifications": {

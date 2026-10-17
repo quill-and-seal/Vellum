@@ -63,6 +63,31 @@ function registerSettings() {
     onChange
   });
 
+  game.settings.register(MODULE_ID, "rasterEnabled", {
+    name: "VELLUM.Settings.RasterEnabled.Name",
+    hint: "VELLUM.Settings.RasterEnabled.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange
+  });
+
+  game.settings.register(MODULE_ID, "rasterSharpness", {
+    name: "VELLUM.Settings.RasterSharpness.Name",
+    hint: "VELLUM.Settings.RasterSharpness.Hint",
+    scope: "client",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 1, step: 0.1 },
+    default: 1,
+    onChange: () => {
+      // Les tuiles en cache ont été calculées avec l'ancienne netteté.
+      renderer.reset();
+      renderer.schedule(0);
+    }
+  });
+
   game.settings.register(MODULE_ID, "debug", {
     name: "VELLUM.Settings.Debug.Name",
     hint: "VELLUM.Settings.Debug.Hint",
