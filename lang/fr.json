@@ -47,6 +47,19 @@
     "Notifications": {
       "LoadFailed": "Vellum : impossible de charger le SVG « {src} ». Il reste affiché en résolution native.",
       "PyramidFailed": "Vellum : impossible de lire la carte découpée associée à « {src} » (fichier .dzi manquant ou invalide). L'aperçu reste affiché."
+    },
+    "Builder": {
+      "MenuName": "Cartes géantes",
+      "MenuLabel": "Préparer une carte géante",
+      "MenuHint": "Découpe une très grande carte (au-delà de 16 384 px) en tuiles, directement dans Foundry, pour qu'elle s'affiche sans limite de taille. La carte doit déjà être dans les fichiers de Foundry.",
+      "Title": "Vellum — carte géante",
+      "Confirm": "Découper <strong>{path}</strong> en tuiles ?<br><br>Les fichiers seront créés dans le même dossier. Gardez cet onglet ouvert pendant l'opération : elle peut prendre quelques minutes pour une très grande carte.",
+      "Loading": "Vellum : ouverture de {name}…",
+      "Progress": "Vellum : découpage, {done} tuiles sur {total}…",
+      "Done": "Vellum : carte découpée.",
+      "Failed": "Vellum : découpage impossible ({error}).",
+      "GMOnly": "Vellum : seul le MJ peut préparer une carte géante.",
+      "Summary": "<p>Carte découpée en {files} tuiles.</p><p>Pour l'utiliser :</p><ol><li>choisissez <strong>{preview}</strong> comme fond de scène ;</li><li>donnez à la scène une largeur de <strong>{width}</strong> et une hauteur de <strong>{height}</strong> pixels.</li></ol>"
     }
   }
 }

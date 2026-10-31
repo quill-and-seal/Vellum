@@ -47,6 +47,19 @@
     "Notifications": {
       "LoadFailed": "Vellum: could not load SVG \"{src}\". It stays displayed at native resolution.",
       "PyramidFailed": "Vellum: could not read the tiled map for \"{src}\" (missing or invalid .dzi file). The preview stays displayed."
+    },
+    "Builder": {
+      "MenuName": "Giant maps",
+      "MenuLabel": "Prepare a giant map",
+      "MenuHint": "Cuts a very large map (beyond 16,384 px) into tiles, right inside Foundry, so it displays with no size limit. The map must already be in Foundry's files.",
+      "Title": "Vellum — giant map",
+      "Confirm": "Cut <strong>{path}</strong> into tiles?<br><br>Files will be created in the same folder. Keep this tab open during the operation: it can take a few minutes for a very large map.",
+      "Loading": "Vellum: opening {name}…",
+      "Progress": "Vellum: cutting, {done} of {total} tiles…",
+      "Done": "Vellum: map cut.",
+      "Failed": "Vellum: could not cut the map ({error}).",
+      "GMOnly": "Vellum: only the GM can prepare a giant map.",
+      "Summary": "<p>Map cut into {files} tiles.</p><p>To use it:</p><ol><li>pick <strong>{preview}</strong> as the scene background;</li><li>set the scene width to <strong>{width}</strong> and height to <strong>{height}</strong> pixels.</li></ol>"
     }
   }
 }

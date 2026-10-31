@@ -4,6 +4,7 @@
  */
 import { MODULE_ID, QUALITY_FACTORS, BASE_RESOLUTIONS } from "./constants.mjs";
 import { VellumRenderer } from "./renderer.mjs";
+import { PyramidBuilderMenu, pickAndBuild, buildPyramid } from "./pyramid-builder.mjs";
 
 const renderer = new VellumRenderer();
 
@@ -12,6 +13,15 @@ const renderer = new VellumRenderer();
 /* -------------------------------------------- */
 
 function registerSettings() {
+  game.settings.registerMenu(MODULE_ID, "buildPyramid", {
+    name: "VELLUM.Builder.MenuName",
+    label: "VELLUM.Builder.MenuLabel",
+    hint: "VELLUM.Builder.MenuHint",
+    icon: "fa-solid fa-map",
+    type: PyramidBuilderMenu,
+    restricted: true
+  });
+
   const onChange = () => renderer.schedule(0);
 
   game.settings.register(MODULE_ID, "enabled", {
@@ -135,6 +145,8 @@ Hooks.once("init", () => {
 
   const module = game.modules.get(MODULE_ID);
   module.api = {
+    /** Découpe une carte géante (chemin dans les données de Foundry) ; sans argument, ouvre le sélecteur. */
+    buildPyramid: path => (path ? buildPyramid(path) : pickAndBuild()),
     /** Force un nouveau rendu de tous les SVG. */
     refresh: () => renderer.refresh(),
     /** Rétablit les textures natives et vide les caches. */
