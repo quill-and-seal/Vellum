@@ -48,6 +48,39 @@ Le gain est surtout visible sur les contours. Une carte exportée en basse réso
 
 Les jetons et les tuiles qui s'estompent au passage d'un jeton (toits) ne sont pas modifiés. Les vidéos non plus.
 
+## Cartes géantes (au-delà de 16 384 px)
+
+Une carte graphique refuse les textures de plus de 16 384 px de côté (8 192 sur certaines machines) : au-delà, Foundry ne peut pas afficher l'image. Vellum contourne cette limite comme les cartes en ligne : la carte est découpée une fois, à l'avance, en tuiles de 512 px à plusieurs niveaux de détail, et seules les tuiles visibles sont chargées, au niveau adapté au zoom. La carte graphique ne reçoit jamais l'image entière.
+
+### 1. Découper la carte (une fois, sur votre ordinateur)
+
+Le script [`tools/vellum-tiles.py`](tools/vellum-tiles.py) demande Python 3 :
+
+```bash
+pip install "pyvips[binary]"
+python vellum-tiles.py carte.png
+```
+
+Il produit, à côté de la carte :
+
+| Fichier | Rôle |
+|---|---|
+| `carte.dzi` | Description de la découpe |
+| `carte_files/` | Les tuiles (WebP), de la carte entière jusqu'à 1 px |
+| `carte.vellum.webp` | Un aperçu de 4096 px, qui sert de fond de scène |
+
+Une carte de 16 000 × 6 400 px se découpe en une quinzaine de secondes et pèse environ 11 Mo de tuiles. Option `--quality` (1 à 100, 90 par défaut) pour la qualité des tuiles.
+
+### 2. Dans Foundry
+
+1. Envoyez **les trois éléments dans le même dossier** des données de Foundry (par exemple `worlds/mon-monde/cartes/`). Le dossier de tuiles peut contenir des milliers de fichiers : le plus simple est de le copier directement dans le dossier `Data` du serveur.
+2. Choisissez **`carte.vellum.webp`** comme fond de scène.
+3. Donnez à la scène **les dimensions de la carte d'origine** (affichées à la fin du script), pas celles de l'aperçu.
+
+Vellum reconnaît le suffixe `.vellum.webp`, lit `carte.dzi` à côté, et charge les tuiles au zoom. En vue d'ensemble, c'est l'aperçu qui s'affiche ; dès qu'on zoome au-delà de sa résolution, les tuiles prennent le relais, jusqu'au pixel près de la carte d'origine.
+
+> **À tester avant une partie :** le brouillard de guerre et la vision de Foundry ont un coût qui grandit avec la taille de la scène, indépendamment de l'image. Sur une scène très grande, vérifiez la fluidité chez vos joueurs.
+
 ## Installation
 
 ### Par URL de manifeste (recommandé)
@@ -135,6 +168,7 @@ Activez le **mode débogage** dans les réglages pour voir la durée de chaque �
 - [x] **0.2** — Rendu en deux couches (fond de base + zone visible), optimisation automatique des flous, fond de base partagé entre objets identiques.
 - [x] **0.2.1** — Zone visible rendue par tuiles avec cache GPU, pour supprimer les saccades.
 - [x] **0.3** — Lissage des images (PNG, JPG, WebP, AVIF) : agrandissement qui suit les contours et anti-scintillement.
+- [x] **0.4** — Cartes géantes : découpe en tuiles hors de Foundry, chargement des seules tuiles visibles.
 - [ ] Mémorisation des cartes SVG préparées d'une session à l'autre, pour un chargement instantané.
 - [ ] Pistes : réglages par scène, aperçu dans la configuration de la scène, prise en charge d'autres formats vectoriels.
 
@@ -164,8 +198,10 @@ scripts/
   svg-optimizer.mjs      Pré-rendu des calques floutés
   raster-upscaler.mjs    Filtre d'agrandissement des images (shader GPU)
   raster-deblock.mjs     Détection de la grille JPG et dé-blocage (shader GPU)
+  pyramid.mjs            Cartes géantes : lecture du .dzi et adresses des tuiles
   constants.mjs          Seuils et paramètres internes
 lang/                    Traductions (français, anglais)
+tools/vellum-tiles.py    Découpe d'une carte géante en tuiles (Python, pyvips)
 .github/workflows/       Publication automatique des releases
 ```
 

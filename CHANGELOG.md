@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+### Nouveautés
+- **Cartes géantes**, au-delà de la limite de taille des textures (16 384 px) :
+  - script `tools/vellum-tiles.py` qui découpe la carte une fois, hors de Foundry, en tuiles WebP de 512 px à tous les niveaux de détail, et produit un aperçu `carte.vellum.webp` ;
+  - avec cet aperçu en fond de scène, Vellum charge à la demande les seules tuiles visibles, au niveau adapté au zoom (6 téléchargements en parallèle, cache GPU partagé avec le reste du module) ;
+  - testé sur une carte de 16 000 × 6 400 px : rendu identique à la carte d'origine au pixel près (aux pertes WebP près).
+- `inspect()` affiche le niveau de la pyramide pour les cartes découpées.
+
 ## 0.3.2
 
 ### Nouveautés

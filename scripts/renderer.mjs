@@ -5,6 +5,10 @@ import {
 import { isSvgSource, loadSvg, clearSvgCache, createCanvas, drawRegion } from "./svg-rasterizer.mjs";
 import { isRasterSource, EdgeUpscaler } from "./raster-upscaler.mjs";
 import { measureBlockiness, isBlocky, deblockTexture } from "./raster-deblock.mjs";
+import { isPyramidPreview, loadPyramid, clearPyramidCache, levelSize, tileUrl } from "./pyramid.mjs";
+
+/** Nombre de tuiles d'une carte découpée téléchargées en même temps. */
+const PYRAMID_PARALLEL_LOADS = 6;
 
 /** Nombre maximum de tuiles d'image calculées par image affichée (le GPU travaille en différé). */
 const RASTER_TILES_PER_FRAME = 6;
@@ -23,7 +27,8 @@ const RASTER_TILES_PER_FRAME = 6;
  *
  * @typedef {object} TargetState
  * @property {string} src
- * @property {"svg"|"raster"} kind        SVG (redessiné en vectoriel) ou image (agrandie par le GPU)
+ * @property {"svg"|"raster"|"pyramid"} kind  SVG (redessiné en vectoriel), image (agrandie par le GPU)
+ *                                        ou carte découpée en tuiles (chargées à la demande)
  * @property {PIXI.Texture} original      Texture de Foundry (jamais détruite par Vellum)
  * @property {{texture:PIXI.Texture, width:number, height:number}|null} base
  * @property {Patch|null} patch
@@ -119,6 +124,7 @@ export class VellumRenderer {
     for (const [target, state] of this.#states) this.#release(target, state, { restore: true });
     this.#states.clear();
     clearSvgCache();
+    clearPyramidCache();
     this.#warned.clear();
   }
 
@@ -153,9 +159,23 @@ export class VellumRenderer {
         state = { src, kind, original: target.texture, base: null, patch: null, view: null, tiles: new Map(), baseTried: false, token: 0 };
         this.#states.set(target, state);
         if (kind === "raster" && !this.#deblock(target, state)) this.#enableMipmaps(state);
+        if (kind === "pyramid") this.#enableMipmaps(state);
       }
 
       if (!target.worldVisible) continue; // tuile cachée, autre niveau affiché…
+
+      // Carte découpée : l'aperçu sert de base, les tuiles sont chargées à la demande.
+      if (kind === "pyramid") {
+        try {
+          state.pyramid ??= await loadPyramid(state.src);
+        } catch (error) {
+          this.#warnOnce(state.src, error, "VELLUM.Notifications.PyramidFailed");
+          continue;
+        }
+        if (this.#states.get(target) !== state || target.destroyed) continue;
+        await this.#updatePatch(target, state, { kind: "pyramid" });
+        continue;
+      }
 
       // Image : pas de fond de base, la texture de Foundry sert de base.
       if (kind === "raster") {
@@ -199,7 +219,8 @@ export class VellumRenderer {
       if (obj.texture && this.#eligible(obj)) {
         const state = this.#states.get(obj);
         const src = (state && obj.texture === state.base?.texture) ? state.src : this.#sourceOf(obj);
-        if (src && isSvgSource(src)) found.set(obj, { src, kind: "svg" });
+        if (src && isPyramidPreview(src)) found.set(obj, { src, kind: "pyramid" });
+        else if (src && isSvgSource(src)) found.set(obj, { src, kind: "svg" });
         else if (src && rasterEnabled && isRasterSource(src) && !this.#isVideo(obj)) found.set(obj, { src, kind: "raster" });
       }
       for (const child of obj.children ?? []) visit(child);
@@ -350,14 +371,24 @@ export class VellumRenderer {
     }
 
     // Niveau de zoom : le plus petit qui atteint (presque) la résolution voulue.
-    let level = Math.max(1, Math.ceil(Math.log2(ratio) - LEVEL_BIAS));
+    // Carte découpée : les niveaux sont ceux de la pyramide, et on ne descend pas
+    // sous le premier niveau plus fin que l'aperçu.
+    const pyr = state.pyramid;
+    let level, minLevel = 1;
+    if (pyr) {
+      level = pyr.maxLevel - Math.max(0, Math.floor(Math.log2(pyr.width / full.width) + LEVEL_BIAS));
+      minLevel = pyr.maxLevel;
+      while (minLevel > 0 && levelSize(pyr, minLevel - 1).width > baseWidth * 1.05) minLevel--;
+    } else {
+      level = Math.max(1, Math.ceil(Math.log2(ratio) - LEVEL_BIAS));
+    }
     let layout;
-    while (level >= 1) {
+    while (level >= minLevel) {
       layout = this.#viewLayout(state, baseWidth, level, visible);
       if (layout.fits) break;
       level--; // budget ou GPU dépassé : on accepte un peu moins de finesse
     }
-    if (level < 1) {
+    if (level < minLevel) {
       this.#showPatch(state, false);
       return;
     }
@@ -380,8 +411,9 @@ export class VellumRenderer {
    */
   #viewLayout(state, baseWidth, level, visible) {
     const native = this.#nativeSize(state);
-    const levelW = Math.round(baseWidth * 2 ** level);
-    const levelH = Math.max(1, Math.round(levelW * native.height / native.width));
+    const { width: levelW, height: levelH } = state.pyramid
+      ? levelSize(state.pyramid, level)
+      : { width: Math.round(baseWidth * 2 ** level), height: Math.max(1, Math.round(baseWidth * 2 ** level * native.height / native.width)) };
     const T = TILE_SIZE;
     const cols = Math.ceil(levelW / T), rows = Math.ceil(levelH / T);
     const i0 = Math.max(0, Math.floor(visible.u0 * levelW / T) - VIEW_MARGIN_TILES);
@@ -488,6 +520,11 @@ export class VellumRenderer {
       while (view.queue.length) {
         if (this.#states.get(target) !== state || state.view !== view || target.destroyed || view.rt.destroyed) return;
 
+        if (source.kind === "pyramid") {
+          await this.#loadPyramidTiles(state, view);
+          continue;
+        }
+
         const { i, j } = view.queue.shift();
         const key = `${view.level}:${i}:${j}`;
         let tile = state.tiles.get(key);
@@ -517,7 +554,7 @@ export class VellumRenderer {
         }
       }
       if (view.rendered) {
-        this.#log(`Zone ${view.width}×${view.height} (niveau ×${2 ** view.level}) : ${view.rendered} tuile(s) en ${Math.round(performance.now() - view.t0)} ms`, state.src);
+        this.#log(`Zone ${view.width}×${view.height} (niveau ${state.pyramid ? `${view.level}/${state.pyramid.maxLevel}` : `×${2 ** view.level}`}) : ${view.rendered} tuile(s) en ${Math.round(performance.now() - view.t0)} ms`, state.src);
       }
       this.#evictTiles(state);
     } finally {
@@ -546,6 +583,44 @@ export class VellumRenderer {
     canvas.app.renderer.render(sprite, { renderTexture: rt, clear: true });
     sprite.texture.destroy(false);
     return { rt, used: performance.now() };
+  }
+
+  /**
+   * Carte découpée : télécharge en parallèle les prochaines tuiles de la file,
+   * puis les pose dans la vue. Une tuile introuvable est ignorée (l'aperçu reste
+   * visible à sa place).
+   */
+  async #loadPyramidTiles(state, view) {
+    const batch = view.queue.splice(0, PYRAMID_PARALLEL_LOADS);
+    const results = await Promise.all(batch.map(async ({ i, j }) => {
+      const key = `${view.level}:${i}:${j}`;
+      let tile = state.tiles.get(key);
+      if (!tile || tile.rt.destroyed) {
+        try {
+          const texture = await PIXI.Texture.fromURL(tileUrl(state.pyramid, view.level, i, j), this.#textureOptions());
+          tile = { rt: texture, used: performance.now() };
+          view.rendered++;
+        } catch (error) {
+          this.#log(`Tuile ${key} introuvable`, error);
+          return null;
+        }
+      }
+      return { i, j, key, tile };
+    }));
+
+    // La vue a pu changer pendant le téléchargement : on garde les tuiles en cache quand même.
+    const renderer = canvas.app.renderer;
+    for (const r of results) {
+      if (!r) continue;
+      r.tile.used = performance.now();
+      state.tiles.set(r.key, r.tile);
+      if (state.view !== view || view.rt.destroyed) continue;
+      const sprite = this.#blitSprite();
+      sprite.texture = r.tile.rt;
+      sprite.position.set((r.i - view.i0) * TILE_SIZE, (r.j - view.j0) * TILE_SIZE);
+      sprite.scale.set(1, 1);
+      renderer.render(sprite, { renderTexture: view.rt, clear: false });
+    }
   }
 
   /** Agrandit une tuile d'image sur le GPU avec le filtre qui suit les contours. */
@@ -887,13 +962,13 @@ export class VellumRenderer {
       const native = this.#nativeSize(s);
       const p = s.patch;
       return {
-        type: s.kind === "raster" ? "image" : "SVG",
+        type: { raster: "image", pyramid: "carte découpée", svg: "SVG" }[s.kind],
         src: s.src,
         objet: target.constructor?.name,
         natif: `${native.width}×${native.height}`,
         base: s.base ? `${s.base.width}×${s.base.height}` : "—",
         zone: p?.region && p.shown && s.view
-          ? `${p.width}×${p.height} ×${2 ** s.view.level} (${pct(p.region.du)}×${pct(p.region.dv)})`
+          ? `${p.width}×${p.height} ${s.pyramid ? `niveau ${s.view.level}/${s.pyramid.maxLevel}` : `×${2 ** s.view.level}`} (${pct(p.region.du)}×${pct(p.region.dv)})`
           : "—",
         tuiles: s.tiles.size ? `${s.tiles.size} en cache${s.view?.queue.length ? `, ${s.view.queue.length} en attente` : ""}` : "—",
         visible: target.worldVisible
@@ -917,10 +992,10 @@ export class VellumRenderer {
     if (this.#setting("debug")) console.log(`${MODULE_ID} |`, ...args);
   }
 
-  #warnOnce(src, error) {
+  #warnOnce(src, error, message = "VELLUM.Notifications.LoadFailed") {
     console.warn(`${MODULE_ID} | Échec du chargement de ${src}`, error);
     if (this.#warned.has(src)) return;
     this.#warned.add(src);
-    ui.notifications?.warn(game.i18n.format("VELLUM.Notifications.LoadFailed", { src }));
+    ui.notifications?.warn(game.i18n.format(message, { src }));
   }
 }
