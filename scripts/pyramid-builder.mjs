@@ -17,9 +17,13 @@ const PARALLEL_UPLOADS = 4;
 const FilePickerClass = () => foundry.applications?.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
 const DialogV2 = () => foundry.applications?.api?.DialogV2;
 
-/** Entrée « Préparer une carte géante » des réglages : Foundry appelle render(). */
-export class PyramidBuilderMenu {
-  render() {
+/**
+ * Entrée « Préparer une carte géante » des réglages. Foundry n'accepte comme menu
+ * qu'une sous-classe d'ApplicationV2 : on en hérite, et l'ouverture lance
+ * directement le sélecteur de fichier au lieu d'afficher une fenêtre.
+ */
+export class PyramidBuilderMenu extends (foundry.applications?.api?.ApplicationV2 ?? class {}) {
+  async render() {
     pickAndBuild();
     return this;
   }

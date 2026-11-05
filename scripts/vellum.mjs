@@ -13,14 +13,19 @@ const renderer = new VellumRenderer();
 /* -------------------------------------------- */
 
 function registerSettings() {
-  game.settings.registerMenu(MODULE_ID, "buildPyramid", {
-    name: "VELLUM.Builder.MenuName",
-    label: "VELLUM.Builder.MenuLabel",
-    hint: "VELLUM.Builder.MenuHint",
-    icon: "fa-solid fa-map",
-    type: PyramidBuilderMenu,
-    restricted: true
-  });
+  // Le menu est facultatif : s'il est refusé, le reste du module doit continuer à fonctionner.
+  try {
+    game.settings.registerMenu(MODULE_ID, "buildPyramid", {
+      name: "VELLUM.Builder.MenuName",
+      label: "VELLUM.Builder.MenuLabel",
+      hint: "VELLUM.Builder.MenuHint",
+      icon: "fa-solid fa-map",
+      type: PyramidBuilderMenu,
+      restricted: true
+    });
+  } catch (error) {
+    console.error(`${MODULE_ID} | Menu « cartes géantes » indisponible`, error);
+  }
 
   const onChange = () => renderer.schedule(0);
 

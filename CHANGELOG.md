@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+### Corrections
+- **Vellum ne faisait plus rien** sur certaines versions de Foundry v14 : l'entrée « Préparer une carte géante » des réglages n'était pas une vraie fenêtre Foundry (ApplicationV2), Foundry la refusait, et cette erreur empêchait tout le reste du module de démarrer. Le menu est maintenant une sous-classe d'ApplicationV2, et un menu refusé ne bloque plus jamais le reste du module.
+
 ## 0.4.0
 
 ### Nouveautés
