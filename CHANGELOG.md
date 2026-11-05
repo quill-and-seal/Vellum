@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+
+### Nouveautés
+- **Tuiles de toit prises en charge** : les tuiles qui s'estompent quand un jeton passe dessous (occultation) sont de nouveau traitées par Vellum (SVG, images, cartes découpées). Le calque haute résolution recopie à chaque image l'état d'occultation du toit (fondu, découpe circulaire, vision, opacité masquée) et s'efface donc avec lui.
+
 ## 0.4.1
 
 ### Corrections

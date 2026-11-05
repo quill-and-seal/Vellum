@@ -230,17 +230,12 @@ export class VellumRenderer {
   }
 
   /**
-   * Objets que Vellum ne doit pas toucher :
-   * - les jetons (animations, anneaux, retournements… gérés par leur propre shader) ;
-   * - les tuiles qui s'estompent quand un jeton passe dessous (toits) : le calque
-   *   posé par Vellum ne suivrait pas cet effet.
+   * Objets que Vellum ne doit pas toucher : les jetons (animations, anneaux,
+   * retournements… gérés par leur propre shader). Les toits sont pris en charge :
+   * le calque recopie leur état d'occultation à chaque image (voir #syncPatch).
    */
   #eligible(obj) {
-    const doc = obj.object?.document;
-    if (!doc) return true;
-    if (doc.documentName === "Token") return false;
-    if (doc.documentName === "Tile" && doc.occlusion?.mode) return false;
-    return true;
+    return obj.object?.document?.documentName !== "Token";
   }
 
   #isVideo(obj) {
@@ -798,6 +793,7 @@ export class VellumRenderer {
       sy ? target.pivot.y * target.scale.y / sy : 0
     );
     mesh.alpha = target.alpha;
+    this.#copyOcclusion(target, mesh);
 
     // Tri dans le groupe primaire : juste au-dessus de la cible.
     for (const key of ["elevation", "sortLayer", "zIndex"]) {
@@ -810,6 +806,25 @@ export class VellumRenderer {
     } catch { /* idem */ }
 
     mesh.visible = patch.shown && target.visible && target.renderable !== false;
+  }
+
+  /**
+   * Toits : la cible s'estompe ou se découpe quand un jeton passe dessous. Foundry
+   * ne calcule cet état que pour ses propres objets ; le calque de Vellum, du même
+   * type, le reçoit par copie à chaque image et s'efface donc de la même façon.
+   */
+  #copyOcclusion(target, mesh) {
+    const state = target.occlusionState;
+    if (state && mesh.occlusionState) {
+      for (const key of ["fade", "radial", "surface", "vision"]) {
+        if (key in state && mesh.occlusionState[key] !== state[key]) mesh.occlusionState[key] = state[key];
+      }
+    }
+    for (const key of ["occludedAlpha", "unoccludedAlpha", "hoverFade", "occluded"]) {
+      try {
+        if (key in target && mesh[key] !== target[key]) mesh[key] = target[key];
+      } catch { /* propriété en lecture seule ou calculée */ }
+    }
   }
 
   /** Affiche ou masque le patch (la visibilité finale suit aussi celle de la cible). */

@@ -46,7 +46,7 @@ Sur les images compressées (JPG, WebP de qualité moyenne), un filtre qui renfo
 
 Le gain est surtout visible sur les contours. Une carte exportée en basse résolution reste floue de près : pour un rendu parfaitement net, exportez-la en SVG ou en plus haute résolution.
 
-Les jetons et les tuiles qui s'estompent au passage d'un jeton (toits) ne sont pas modifiés. Les vidéos non plus.
+Les jetons et les vidéos ne sont pas modifiés. Les tuiles de toit, qui s'estompent au passage d'un jeton, sont prises en charge : le calque de Vellum suit leur effacement.
 
 ## Cartes géantes (au-delà de 16 384 px)
 
@@ -125,7 +125,7 @@ Pour un résultat optimal :
 - **SVG très complexes.** Le temps de dessin d'une tuile dépend surtout du contenu du fichier : de l'ordre de 10 à 30 ms par tuile pour une carte de 16 Mo et 61 000 formes.
 - **Navigateur.** Vellum est optimisé pour Chromium (l'application Foundry, Chrome, Edge). Sous Firefox, le rendu fonctionne mais peut être plus lent.
 - **Fichiers hébergés ailleurs** (S3, autre domaine) : le serveur doit autoriser les requêtes CORS, sinon le SVG reste en résolution native.
-- **Toits et jetons** : les tuiles qui s'estompent au passage d'un jeton et les jetons ne sont pas traités, le calque posé par Vellum ne suivrait pas leurs effets.
+- **Jetons** : ils ne sont pas traités, le calque posé par Vellum ne suivrait pas leurs effets (anneaux, animations).
 
 ## Diagnostic
 
