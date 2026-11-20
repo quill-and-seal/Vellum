@@ -1,7 +1,7 @@
 /**
  * Cartes géantes découpées en pyramide de tuiles (format Deep Zoom), produites
  * par tools/vellum-tiles.py. Le fond de scène est un aperçu « carte.vellum.webp » ;
- * la pyramide « carte.dzi » + « carte_files/ » est à côté.
+ * la pyramide « carte.xml » (ou « carte.dzi ») + « carte_files/ » est à côté.
  */
 import { TILE_SIZE } from "./constants.mjs";
 
@@ -26,9 +26,16 @@ export function loadPyramid(src) {
       // Paramètre de version de l'aperçu (« ?v=… ») : repris pour la description et les tuiles,
       // pour qu'une carte réexportée sous le même nom ne montre pas d'anciennes tuiles en cache.
       const query = src.split("#")[0].split("?")[1] ?? "";
-      const dzi = clean.replace(PREVIEW, ".dzi");
-      const response = await fetch(query ? `${dzi}?${query}` : dzi);
-      if (!response.ok) throw new Error(`${dzi} : HTTP ${response.status}`);
+      // Description : « carte.xml » (Foundry refuse d'envoyer les .dzi), ou « carte.dzi » (outil
+      // vellum-tiles.py, ou copie faite à la main).
+      const stem = clean.replace(PREVIEW, "");
+      let dzi = null, response = null;
+      for (const ext of [".xml", ".dzi"]) {
+        const url = stem + ext;
+        const res = await fetch(query ? `${url}?${query}` : url).catch(() => null);
+        if (res?.ok) { dzi = url; response = res; break; }
+      }
+      if (!response) throw new Error(`${stem}.xml / .dzi : introuvable`);
       const doc = new DOMParser().parseFromString(await response.text(), "application/xml");
       const image = doc.querySelector("Image");
       const size = doc.querySelector("Size");
@@ -44,7 +51,7 @@ export function loadPyramid(src) {
       return {
         width, height, format,
         maxLevel: Math.ceil(Math.log2(Math.max(width, height))),
-        base: dzi.replace(/\.dzi$/, "_files/"),
+        base: `${stem}_files/`,
         query
       };
     })();

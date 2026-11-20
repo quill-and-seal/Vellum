@@ -4,7 +4,7 @@
  * Le navigateur du MJ ouvre la carte, la découpe en tuiles de 512 px à tous les
  * niveaux de détail (format Deep Zoom), et envoie les fichiers au serveur Foundry
  * comme un téléversement normal :
- *   carte.dzi            description de la découpe
+ *   carte.xml            description de la découpe (format .dzi)
  *   carte_files/<n>/     les tuiles du niveau n
  *   carte.vellum.webp    aperçu de 4096 px, à mettre en fond de scène
  */
@@ -149,7 +149,8 @@ export async function buildPyramid(path, io = {}) {
   <Size Width="${width}" Height="${height}"/>
 </Image>
 `;
-    await upload(dir, new File([dzi], `${name}.dzi`, { type: "application/xml" }));
+    // .xml : Foundry refuse d'envoyer les fichiers .dzi (même contenu, Vellum lit les deux).
+    await upload(dir, new File([dzi], `${name}.xml`, { type: "application/xml" }));
     canvas.width = canvas.height = 0;
     progress.update(1, game.i18n.localize("VELLUM.Builder.Done"));
 

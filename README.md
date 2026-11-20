@@ -63,7 +63,7 @@ Tout se fait dans Foundry, sans logiciel externe :
 | 16 000 × 6 400 px | 580 (11 Mo) | ~20 s |
 | 32 000 × 12 800 px | 2 155 (24 Mo) | ~80 s |
 
-Le découpage ne se fait qu'une fois : les joueurs chargent ensuite les tuiles comme n'importe quelle image. Il crée à côté de la carte un fichier `carte.dzi`, un dossier `carte_files/` et l'aperçu `carte.vellum.webp` ; la carte d'origine n'est plus utilisée et peut être supprimée. Depuis la console : `game.modules.get("vellum").api.buildPyramid("chemin/de/la/carte.png")`.
+Le découpage ne se fait qu'une fois : les joueurs chargent ensuite les tuiles comme n'importe quelle image. Il crée à côté de la carte un fichier `carte.xml` (description de la découpe au format Deep Zoom ; Foundry refuse d'envoyer l'extension `.dzi`, Vellum lit les deux), un dossier `carte_files/` et l'aperçu `carte.vellum.webp` ; la carte d'origine n'est plus utilisée et peut être supprimée. Depuis la console : `game.modules.get("vellum").api.buildPyramid("chemin/de/la/carte.png")`.
 
 **Limites :**
 - Le navigateur du MJ doit pouvoir ouvrir la carte entière en mémoire (environ 4 octets par pixel : 1,6 Go pour 32 000 × 12 800 px). Testé jusqu'à cette taille sous Chromium.
@@ -178,6 +178,7 @@ Activez le **mode débogage** dans les réglages pour voir la durée de chaque �
 - [x] **0.4** — Cartes géantes : découpe en tuiles directement dans Foundry, chargement des seules tuiles visibles.
 - [x] **0.4.3** — Plus de gel au zoom avec les calques d'autres modules (Cadastre) : `vellumIgnore`, analyse JPG faite une fois par image.
 - [x] **0.4.4** — Précharger une scène chez les joueurs sans l'afficher ; version des cartes découpées réexportées.
+- [x] **0.4.5** — Description des cartes découpées en `.xml` (Foundry refuse les `.dzi`).
 - [ ] Mémorisation des cartes SVG préparées d'une session à l'autre, pour un chargement instantané.
 - [ ] Pistes : réglages par scène, aperçu dans la configuration de la scène, prise en charge d'autres formats vectoriels.
 
@@ -207,7 +208,7 @@ scripts/
   svg-optimizer.mjs      Pré-rendu des calques floutés
   raster-upscaler.mjs    Filtre d'agrandissement des images (shader GPU)
   raster-deblock.mjs     Détection de la grille JPG et dé-blocage (shader GPU)
-  pyramid.mjs            Cartes géantes : lecture du .dzi et adresses des tuiles
+  pyramid.mjs            Cartes géantes : lecture de la description (.xml ou .dzi) et adresses des tuiles
   pyramid-builder.mjs    Cartes géantes : découpage dans le navigateur et envoi au serveur
   constants.mjs          Seuils et paramètres internes
 lang/                    Traductions (français, anglais)

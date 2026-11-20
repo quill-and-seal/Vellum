@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5
+
+### Corrections
+- **Cartes découpées dans Foundry impossibles à envoyer** : Foundry refuse l'extension `.dzi`. La description de la découpe est maintenant envoyée en `carte.xml` (même contenu) ; Vellum lit `carte.xml`, ou `carte.dzi` pour les cartes découpées avec l'outil externe. Concerne la découpe de cartes géantes et les fonds en tuiles de Cadastre 0.1.25.
+
 ## 0.4.4
 
 ### Nouveautés

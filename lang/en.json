@@ -46,7 +46,7 @@
     },
     "Notifications": {
       "LoadFailed": "Vellum: could not load SVG \"{src}\". It stays displayed at native resolution.",
-      "PyramidFailed": "Vellum: could not read the tiled map for \"{src}\" (missing or invalid .dzi file). The preview stays displayed."
+      "PyramidFailed": "Vellum: could not read the tiled map for \"{src}\" (missing or invalid .xml or .dzi file). The preview stays displayed."
     },
     "Builder": {
       "MenuName": "Giant maps",

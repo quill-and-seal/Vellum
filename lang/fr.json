@@ -46,7 +46,7 @@
     },
     "Notifications": {
       "LoadFailed": "Vellum : impossible de charger le SVG « {src} ». Il reste affiché en résolution native.",
-      "PyramidFailed": "Vellum : impossible de lire la carte découpée associée à « {src} » (fichier .dzi manquant ou invalide). L'aperçu reste affiché."
+      "PyramidFailed": "Vellum : impossible de lire la carte découpée associée à « {src} » (fichier .xml ou .dzi manquant ou invalide). L'aperçu reste affiché."
     },
     "Builder": {
       "MenuName": "Cartes géantes",
