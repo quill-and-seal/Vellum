@@ -149,6 +149,12 @@ game.modules.get("vellum").api.refresh() // force une mise à jour
 game.modules.get("vellum").api.reset()   // revient aux images natives puis recalcule tout
 ```
 
+Pour les modules qui gèrent eux-mêmes la netteté de leurs images (calques animés, atlas de textures), il suffit de marquer leur conteneur : Vellum l'ignore alors entièrement, enfants compris.
+
+```js
+container.vellumIgnore = true;
+```
+
 Activez le **mode débogage** dans les réglages pour voir la durée de chaque étape. En cas de bug, joignez le résultat de `inspect()` et les messages de la console à votre issue.
 
 ## Feuille de route
@@ -158,6 +164,7 @@ Activez le **mode débogage** dans les réglages pour voir la durée de chaque �
 - [x] **0.2.1** — Zone visible rendue par tuiles avec cache GPU, pour supprimer les saccades.
 - [x] **0.3** — Lissage des images (PNG, JPG, WebP, AVIF) : agrandissement qui suit les contours et anti-scintillement.
 - [x] **0.4** — Cartes géantes : découpe en tuiles directement dans Foundry, chargement des seules tuiles visibles.
+- [x] **0.4.3** — Plus de gel au zoom avec les calques d'autres modules (Cadastre) : `vellumIgnore`, analyse JPG faite une fois par image.
 - [ ] Mémorisation des cartes SVG préparées d'une session à l'autre, pour un chargement instantané.
 - [ ] Pistes : réglages par scène, aperçu dans la configuration de la scène, prise en charge d'autres formats vectoriels.
 

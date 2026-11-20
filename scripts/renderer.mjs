@@ -61,6 +61,8 @@ export class VellumRenderer {
   #upscaler = null;
   /** Images dont Vellum a activé les mipmaps : texture → { refs, previous }. */
   #mipmapped = new Map();
+  /** Indice de blocs déjà mesuré, par texture : une même image partagée n'est analysée qu'une fois. */
+  #blockiness = new WeakMap();
   #timer = null;
   #firstRequest = null;
   #running = false;
@@ -215,7 +217,9 @@ export class VellumRenderer {
     const found = new Map();
     const rasterEnabled = this.#setting("rasterEnabled") !== false;
     const visit = obj => {
-      if (!obj || obj.destroyed || obj._vellumPatch) return;
+      // vellumIgnore : un module qui gère lui-même la netteté de ses images (ses calques entiers
+      // sont alors ignorés, enfants compris).
+      if (!obj || obj.destroyed || obj._vellumPatch || obj.vellumIgnore) return;
       if (obj.texture && this.#eligible(obj)) {
         const state = this.#states.get(obj);
         const src = (state && obj.texture === state.base?.texture) ? state.src : this.#sourceOf(obj);
@@ -650,9 +654,12 @@ export class VellumRenderer {
     try {
       const { width, height } = state.original.baseTexture;
       const t0 = performance.now();
-      const ratio = measureBlockiness(element, width, height);
+      const base = state.original.baseTexture;
+      const known = this.#blockiness.has(base);
+      const ratio = known ? this.#blockiness.get(base) : measureBlockiness(element, width, height);
+      if (!known) this.#blockiness.set(base, ratio);
       if (!isBlocky(ratio)) {
-        this.#log(`Pas de blocs de compression détectés (indice ${ratio.toFixed(2)})`, state.src);
+        if (!known) this.#log(`Pas de blocs de compression détectés (indice ${ratio.toFixed(2)})`, state.src);
         return false;
       }
       const texture = deblockTexture(canvas.app.renderer, state.original, strength);

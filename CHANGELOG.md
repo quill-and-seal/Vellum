@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3
+
+### Corrections
+- **Gel d'une minute au zoom** avec les arbres animés de Cadastre : Vellum prenait chacun des milliers de morceaux d'arbres pour une image à lisser, analysait la même page d'images des centaines de fois puis l'agrandissait morceau par morceau. Désormais :
+  - un module peut marquer un calque avec `vellumIgnore = true` : Vellum l'ignore entièrement (Cadastre 0.1.23 le fait pour ses arbres, son herbe et son eau, dont il gère lui-même la netteté) ;
+  - la détection des blocs JPG n'est faite qu'une fois par image, même si elle est affichée par de nombreux objets.
+
 ## 0.4.2
 
 ### Nouveautés
