@@ -60,6 +60,13 @@
       "Failed": "Vellum: could not cut the map ({error}).",
       "GMOnly": "Vellum: only the GM can prepare a giant map.",
       "Summary": "<p>Map cut into {files} tiles.</p><p>To use it:</p><ol><li>pick <strong>{preview}</strong> as the scene background;</li><li>set the scene width to <strong>{width}</strong> and height to <strong>{height}</strong> pixels.</li></ol>"
+    },
+    "Preload": {
+      "Menu": "Preload for players",
+      "Started": "Vellum: preloading \"{scene}\" for {total} player(s)…",
+      "Progress": "Vellum: \"{scene}\" ready for {ready} of {total} player(s)…",
+      "Done": "Vellum: \"{scene}\" preloaded for {ready} of {total} player(s).",
+      "Partial": "Vellum: \"{scene}\" preloaded for {ready} of {total} player(s) (no answer: {missing})."
     }
   }
 }

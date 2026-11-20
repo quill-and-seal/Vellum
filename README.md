@@ -149,6 +149,18 @@ game.modules.get("vellum").api.refresh() // force une mise à jour
 game.modules.get("vellum").api.reset()   // revient aux images natives puis recalcule tout
 ```
 
+### Précharger une scène chez les joueurs
+
+Clic droit sur une scène (liste des scènes ou barre de navigation) → **Précharger chez les joueurs**. Les joueurs connectés téléchargent en arrière-plan le fond, les tuiles et les premiers niveaux des cartes découpées, sans que la scène s'affiche chez eux ; une notification indique chez combien de joueurs elle est prête. Quand tu l'actives ensuite, elle apparaît presque immédiatement.
+
+Depuis la console : `game.modules.get("vellum").api.preloadForPlayers(sceneId)`.
+
+Un autre module peut ajouter ses propres images au préchargement (elles vont dans le cache de textures de Foundry) :
+
+```js
+Hooks.on("vellumPreload", (scene, add) => add("chemin/de/mon/image.webp"));
+```
+
 Pour les modules qui gèrent eux-mêmes la netteté de leurs images (calques animés, atlas de textures), il suffit de marquer leur conteneur : Vellum l'ignore alors entièrement, enfants compris.
 
 ```js
@@ -165,6 +177,7 @@ Activez le **mode débogage** dans les réglages pour voir la durée de chaque �
 - [x] **0.3** — Lissage des images (PNG, JPG, WebP, AVIF) : agrandissement qui suit les contours et anti-scintillement.
 - [x] **0.4** — Cartes géantes : découpe en tuiles directement dans Foundry, chargement des seules tuiles visibles.
 - [x] **0.4.3** — Plus de gel au zoom avec les calques d'autres modules (Cadastre) : `vellumIgnore`, analyse JPG faite une fois par image.
+- [x] **0.4.4** — Précharger une scène chez les joueurs sans l'afficher ; version des cartes découpées réexportées.
 - [ ] Mémorisation des cartes SVG préparées d'une session à l'autre, pour un chargement instantané.
 - [ ] Pistes : réglages par scène, aperçu dans la configuration de la scène, prise en charge d'autres formats vectoriels.
 

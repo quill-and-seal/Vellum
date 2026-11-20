@@ -60,6 +60,13 @@
       "Failed": "Vellum : découpage impossible ({error}).",
       "GMOnly": "Vellum : seul le MJ peut préparer une carte géante.",
       "Summary": "<p>Carte découpée en {files} tuiles.</p><p>Pour l'utiliser :</p><ol><li>choisissez <strong>{preview}</strong> comme fond de scène ;</li><li>donnez à la scène une largeur de <strong>{width}</strong> et une hauteur de <strong>{height}</strong> pixels.</li></ol>"
+    },
+    "Preload": {
+      "Menu": "Précharger chez les joueurs",
+      "Started": "Vellum : préchargement de « {scene} » chez {total} joueur(s)…",
+      "Progress": "Vellum : « {scene} » prêt chez {ready} joueur(s) sur {total}…",
+      "Done": "Vellum : « {scene} » préchargée chez {ready} joueur(s) sur {total}.",
+      "Partial": "Vellum : « {scene} » préchargée chez {ready} joueur(s) sur {total} (sans réponse : {missing})."
     }
   }
 }

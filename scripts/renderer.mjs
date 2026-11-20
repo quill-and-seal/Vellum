@@ -6,6 +6,7 @@ import { isSvgSource, loadSvg, clearSvgCache, createCanvas, drawRegion } from ".
 import { isRasterSource, EdgeUpscaler } from "./raster-upscaler.mjs";
 import { measureBlockiness, isBlocky, deblockTexture } from "./raster-deblock.mjs";
 import { isPyramidPreview, loadPyramid, clearPyramidCache, levelSize, tileUrl } from "./pyramid.mjs";
+import { takePreloadedTile } from "./preload.mjs";
 
 /** Nombre de tuiles d'une carte découpée téléchargées en même temps. */
 const PYRAMID_PARALLEL_LOADS = 6;
@@ -596,7 +597,15 @@ export class VellumRenderer {
       let tile = state.tiles.get(key);
       if (!tile || tile.rt.destroyed) {
         try {
-          const texture = await PIXI.Texture.fromURL(tileUrl(state.pyramid, view.level, i, j), this.#textureOptions());
+          // Tuile préchargée (menu « Précharger chez les joueurs ») : déjà en mémoire.
+          const url = tileUrl(state.pyramid, view.level, i, j);
+          const local = takePreloadedTile(url);
+          let texture;
+          try {
+            texture = await PIXI.Texture.fromURL(local?.url ?? url, this.#textureOptions());
+          } finally {
+            local?.release();
+          }
           tile = { rt: texture, used: performance.now() };
           view.rendered++;
         } catch (error) {

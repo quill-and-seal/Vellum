@@ -5,6 +5,7 @@
 import { MODULE_ID, QUALITY_FACTORS, BASE_RESOLUTIONS } from "./constants.mjs";
 import { VellumRenderer } from "./renderer.mjs";
 import { PyramidBuilderMenu, pickAndBuild, buildPyramid } from "./pyramid-builder.mjs";
+import { registerPreload, preloadForPlayers } from "./preload.mjs";
 
 const renderer = new VellumRenderer();
 
@@ -147,11 +148,14 @@ function registerSettings() {
 
 Hooks.once("init", () => {
   registerSettings();
+  registerPreload();
 
   const module = game.modules.get(MODULE_ID);
   module.api = {
     /** Découpe une carte géante (chemin dans les données de Foundry) ; sans argument, ouvre le sélecteur. */
     buildPyramid: path => (path ? buildPyramid(path) : pickAndBuild()),
+    /** Précharge une scène chez tous les joueurs connectés, sans la leur afficher (MJ). */
+    preloadForPlayers: sceneId => preloadForPlayers(sceneId),
     /** Force un nouveau rendu de tous les SVG. */
     refresh: () => renderer.refresh(),
     /** Rétablit les textures natives et vide les caches. */

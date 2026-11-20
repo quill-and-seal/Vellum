@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.4
+
+### Nouveautés
+- **Précharger chez les joueurs** : clic droit sur une scène (liste des scènes ou barre de navigation), MJ seulement. En un clic, la scène est préchargée chez tous les joueurs connectés **sans s'afficher chez eux** :
+  - préchargement natif de Foundry (fond, tuiles) ;
+  - premiers niveaux des cartes découpées, ceux du zoom habituel (400 tuiles au plus par carte), gardés compressés en mémoire jusqu'à leur premier affichage ;
+  - images déclarées par d'autres modules avec le hook `vellumPreload` (Cadastre y ajoute ses arbres).
+  - Chaque joueur répond quand il a fini : une notification indique chez combien de joueurs la scène est prête, et qui n'a pas répondu.
+- API : `game.modules.get("vellum").api.preloadForPlayers(sceneId)`.
+- **Cartes découpées réexportées** : le paramètre de version de l'aperçu (`carte.vellum.webp?v=…`) est repris pour la description et les tuiles, pour qu'une carte remplacée sous le même nom n'affiche pas d'anciennes tuiles gardées en cache par le navigateur.
+
 ## 0.4.3
 
 ### Corrections

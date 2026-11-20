@@ -23,8 +23,11 @@ export function loadPyramid(src) {
   if (!cache.has(src)) {
     const promise = (async () => {
       const clean = src.split(/[?#]/)[0];
+      // Paramètre de version de l'aperçu (« ?v=… ») : repris pour la description et les tuiles,
+      // pour qu'une carte réexportée sous le même nom ne montre pas d'anciennes tuiles en cache.
+      const query = src.split("#")[0].split("?")[1] ?? "";
       const dzi = clean.replace(PREVIEW, ".dzi");
-      const response = await fetch(dzi);
+      const response = await fetch(query ? `${dzi}?${query}` : dzi);
       if (!response.ok) throw new Error(`${dzi} : HTTP ${response.status}`);
       const doc = new DOMParser().parseFromString(await response.text(), "application/xml");
       const image = doc.querySelector("Image");
@@ -41,7 +44,8 @@ export function loadPyramid(src) {
       return {
         width, height, format,
         maxLevel: Math.ceil(Math.log2(Math.max(width, height))),
-        base: dzi.replace(/\.dzi$/, "_files/")
+        base: dzi.replace(/\.dzi$/, "_files/"),
+        query
       };
     })();
     promise.catch(() => cache.delete(src));
@@ -61,5 +65,6 @@ export function levelSize(pyramid, level) {
 }
 
 export function tileUrl(pyramid, level, i, j) {
-  return `${pyramid.base}${level}/${i}_${j}.${pyramid.format}`;
+  const url = `${pyramid.base}${level}/${i}_${j}.${pyramid.format}`;
+  return pyramid.query ? `${url}?${pyramid.query}` : url;
 }
